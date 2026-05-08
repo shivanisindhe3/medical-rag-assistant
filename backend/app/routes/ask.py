@@ -1,6 +1,7 @@
 import requests
 from fastapi import APIRouter
 
+from app.schemas.chat import QuestionRequest
 from app.services.vector_store import search_similar_chunks
 
 router = APIRouter()
@@ -9,9 +10,9 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 
 
 @router.post("/ask")
-def ask_llama(question: str):
+def ask_llama(request: QuestionRequest):
 
-    relevant_chunks = search_similar_chunks(question)
+    relevant_chunks = search_similar_chunks(request.question)
 
     context = "\n".join(relevant_chunks)
 
@@ -19,13 +20,15 @@ def ask_llama(question: str):
 You are a medical AI assistant.
 
 Answer the user's question using ONLY the provided medical context.
-If the answer is not in the context, say you don't know based on the provided documents.
+
+If the answer is not found in the context, say:
+"I don't know based on the provided medical documents."
 
 Medical Context:
 {context}
 
 User Question:
-{question}
+{request.question}
 """
 
     payload = {
@@ -35,10 +38,11 @@ User Question:
     }
 
     response = requests.post(OLLAMA_URL, json=payload)
+
     result = response.json()
 
     return {
-        "question": question,
+        "question": request.question,
         "retrieved_context": relevant_chunks,
         "response": result["response"]
     }
