@@ -4,7 +4,6 @@ import streamlit as st
 
 ASK_URL = "http://127.0.0.1:8000/ask"
 INGEST_URL = "http://127.0.0.1:8000/ingest-pdf"
-
 BACKEND_DATA_DIR = "../backend/data"
 
 st.set_page_config(
@@ -14,10 +13,16 @@ st.set_page_config(
 )
 
 st.title("🩺 Medical RAG Assistant")
-st.write("Upload medical PDFs and ask questions based on them.")
+st.write("Upload medical PDFs and chat with your documents.")
 
 # -------------------------
-# Sidebar: Multiple PDF Upload
+# Session state for chat
+# -------------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# -------------------------
+# Sidebar: PDF Upload
 # -------------------------
 st.sidebar.header("📄 Upload Medical PDFs")
 
@@ -53,33 +58,66 @@ if uploaded_files:
                 st.sidebar.error(f"Failed: {uploaded_file.name}")
                 st.sidebar.write(response.text)
 
-# -------------------------
-# Main: Ask Questions
-# -------------------------
-st.subheader("Ask a Question")
+if st.sidebar.button("Clear Chat"):
+    st.session_state.messages = []
+    st.rerun()
 
-question = st.text_input("Enter your medical question:")
+# -------------------------
+# Display chat history
+# -------------------------
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
 
-if st.button("Ask"):
-    if not question.strip():
-        st.warning("Please enter a question.")
-    else:
+        if message["role"] == "assistant" and "sources" in message:
+            with st.expander("Sources / Retrieved Context"):
+                for i, chunk in enumerate(message["sources"], start=1):
+                    st.markdown(f"**Source {i}: {chunk['source']}**")
+                    st.write(chunk["text"])
+
+# -------------------------
+# Chat input
+# -------------------------
+user_question = st.chat_input("Ask a medical question...")
+
+if user_question:
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_question
+    })
+
+    with st.chat_message("user"):
+        st.write(user_question)
+
+    with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             response = requests.post(
                 ASK_URL,
-                json={"question": question}
+                json={"question": user_question}
             )
 
         if response.status_code == 200:
             data = response.json()
+            answer = data["response"]
+            sources = data["retrieved_context"]
 
-            st.subheader("Answer")
-            st.write(data["response"])
+            st.write(answer)
 
             with st.expander("Sources / Retrieved Context"):
-                for i, chunk in enumerate(data["retrieved_context"], start=1):
+                for i, chunk in enumerate(sources, start=1):
                     st.markdown(f"**Source {i}: {chunk['source']}**")
                     st.write(chunk["text"])
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": answer,
+                "sources": sources
+            })
         else:
-            st.error("Backend error")
-            st.write(response.text)
+            error_message = "Backend error. Please make sure FastAPI is running."
+            st.error(error_message)
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": error_message
+            })
