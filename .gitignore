@@ -10,3 +10,6 @@ __pycache__/
 
 # Mac files
 .DS_Store
+backend/chroma_db/
+*.bin
+*.sqlite3
