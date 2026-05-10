@@ -2,6 +2,7 @@ import requests
 from fastapi import APIRouter
 
 from app.schemas.chat import QuestionRequest
+from app.services.embedding_service import create_embedding
 from app.services.vector_store import search_similar_chunks
 
 router = APIRouter()
@@ -11,10 +12,13 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 
 @router.post("/ask")
 def ask_llama(request: QuestionRequest):
+    query_embedding = create_embedding(request.question)
 
-    relevant_chunks = search_similar_chunks(request.question)
+    relevant_chunks = search_similar_chunks(query_embedding)
 
-    context = "\n".join(relevant_chunks)
+    context = "\n\n".join(
+        [chunk["text"] for chunk in relevant_chunks]
+    )
 
     prompt = f"""
 You are a medical AI assistant.
@@ -38,7 +42,6 @@ User Question:
     }
 
     response = requests.post(OLLAMA_URL, json=payload)
-
     result = response.json()
 
     return {
