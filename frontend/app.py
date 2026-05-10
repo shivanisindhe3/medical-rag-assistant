@@ -29,7 +29,7 @@ if st.button("Ask"):
             st.subheader("Answer")
             st.write(data["response"])
 
-            with st.expander("Retrieved Context"):
-                for i, chunk in enumerate(data["retrieved_context"], start=1):
-                    st.markdown(f"**Chunk {i}:**")
-                    st.write(chunk)
+        with st.expander("Sources / Retrieved Context"):
+            for i, chunk in enumerate(data["retrieved_context"], start=1):
+               st.markdown(f"**Source {i}: {chunk['source']}**")
+               st.write(chunk["text"])
