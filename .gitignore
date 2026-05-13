@@ -7,9 +7,14 @@ __pycache__/
 
 # Environment Variables
 .env
+backend/.env
 
 # Mac files
 .DS_Store
-backend/chroma_db/
+
+# Vector Database
+chroma_db/
+
+# Binary / DB files
 *.bin
 *.sqlite3
