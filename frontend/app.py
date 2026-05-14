@@ -1,11 +1,7 @@
-import os
-import requests
 import streamlit as st
+import requests
 
-ASK_URL = "http://127.0.0.1:8000/ask"
-INGEST_URL = "http://127.0.0.1:8000/ingest-pdf"
-
-BACKEND_DATA_DIR = "../backend/data"
+BACKEND_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
     page_title="Medical RAG Assistant",
@@ -13,197 +9,142 @@ st.set_page_config(
     layout="centered"
 )
 
-# -------------------------
-# Helper Function
-# -------------------------
-def show_sources(sources):
-
-    if not sources:
-        st.info("No retrieved context returned.")
-        return
-
-    for i, chunk in enumerate(sources, start=1):
-
-        if isinstance(chunk, dict):
-            source = chunk.get("source", "Unknown source")
-            text = chunk.get("text", "")
-        else:
-            source = "Unknown source"
-            text = str(chunk)
-
-        st.markdown(f"**Source {i}: {source}**")
-        st.write(text)
-
-
-# -------------------------
-# App Title
-# -------------------------
 st.title("🩺 Medical RAG Assistant")
+st.write("Upload medical PDFs and chat with your documents.")
 
-st.write(
-    "Upload medical PDFs and chat with your documents."
-)
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# -------------------------
-# Session State
-# -------------------------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+st.subheader("📄 Upload Medical PDFs")
 
-# -------------------------
-# Sidebar Upload
-# -------------------------
-st.sidebar.header("📄 Upload Medical PDFs")
-
-uploaded_files = st.sidebar.file_uploader(
+uploaded_files = st.file_uploader(
     "Choose PDF files",
     type=["pdf"],
     accept_multiple_files=True
 )
 
 if uploaded_files:
+    st.write(f"✅ {len(uploaded_files)} file(s) selected")
 
-    os.makedirs(BACKEND_DATA_DIR, exist_ok=True)
-
-    st.sidebar.write(
-        f"{len(uploaded_files)} file(s) selected"
-    )
-
-    if st.sidebar.button("Ingest PDFs"):
-
-        for uploaded_file in uploaded_files:
-
-            file_path = os.path.join(
-                BACKEND_DATA_DIR,
-                uploaded_file.name
-            )
-
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-
-            relative_path = (
-                f"data/{uploaded_file.name}"
-            )
-
-            with st.spinner(
-                f"Ingesting {uploaded_file.name}..."
-            ):
+    if st.button("Ingest PDFs"):
+        with st.spinner("Uploading and ingesting PDFs..."):
+            try:
+                files = [
+                    (
+                        "files",
+                        (
+                            uploaded_file.name,
+                            uploaded_file.getvalue(),
+                            "application/pdf"
+                        )
+                    )
+                    for uploaded_file in uploaded_files
+                ]
 
                 response = requests.post(
-                    INGEST_URL,
-                    json={"pdf_path": relative_path}
+                    f"{BACKEND_URL}/ingest-pdf",
+                    files=files
                 )
 
-            if response.status_code == 200:
+                if response.status_code == 200:
+                    result = response.json()
 
-                st.sidebar.success(
-                    f"Ingested: {uploaded_file.name}"
+                    st.success(
+                        f"✅ Successfully ingested {len(result['files'])} PDF(s)"
+                    )
+
+                    st.info(
+                        f"📚 Total chunks stored: {result['total_chunks']}"
+                    )
+
+                else:
+                    st.error(
+                        f"❌ Failed to ingest PDFs. Status code: {response.status_code}"
+                    )
+                    st.write(response.text)
+
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
+
+st.subheader("💬 Ask Questions")
+
+question = st.text_input("Enter your medical question:")
+
+if st.button("Ask"):
+    if question.strip():
+        payload = {
+            "question": question,
+            "chat_history": st.session_state.chat_history
+        }
+
+        with st.spinner("Generating response..."):
+            try:
+                response = requests.post(
+                    f"{BACKEND_URL}/ask",
+                    json=payload
                 )
 
-            else:
+                if response.status_code == 200:
+                    result = response.json()
 
-                st.sidebar.error(
-                    f"Failed: {uploaded_file.name}"
-                )
+                    answer = result.get(
+                        "response",
+                        "No response generated."
+                    )
 
-                st.sidebar.write(response.text)
+                    retrieved_context = result.get(
+                        "retrieved_context",
+                        []
+                    )
 
-# -------------------------
-# Clear Chat
-# -------------------------
-if st.sidebar.button("Clear Chat"):
+                    st.session_state.chat_history.append({
+                        "question": question,
+                        "answer": answer
+                    })
 
-    st.session_state.messages = []
+                    with st.chat_message("user"):
+                        st.write(question)
 
-    st.rerun()
+                    with st.chat_message("assistant"):
+                        st.write(answer)
 
-# -------------------------
-# Display Chat History
-# -------------------------
-for message in st.session_state.messages:
+                    st.markdown("## 📚 Sources / Retrieved Context")
 
-    with st.chat_message(message["role"]):
+                    if retrieved_context:
+                        for i, item in enumerate(retrieved_context):
+                            with st.expander(f"Source {i + 1}"):
+                                st.markdown(f"""
+                                **PDF:** {item.get("source", "Unknown")}
 
-        st.write(message["content"])
+                                **Chunk:** {item.get("chunk_index", "N/A")}
+                                """)
 
-        if (
-            message["role"] == "assistant"
-            and "sources" in message
-        ):
+                                st.write(item.get("text", ""))
 
-            with st.expander(
-                "Sources / Retrieved Context"
-            ):
+                    else:
+                        st.info("No retrieved context found.")
 
-                show_sources(message["sources"])
+                else:
+                    st.error(
+                        f"❌ Backend returned an error. Status code: {response.status_code}"
+                    )
+                    st.write(response.text)
 
-# -------------------------
-# Chat Input
-# -------------------------
-user_question = st.chat_input(
-    "Ask a medical question..."
-)
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
 
-if user_question:
+if st.session_state.chat_history:
+    st.sidebar.title("🕘 Chat History")
 
-    # Store user message
-    st.session_state.messages.append({
-        "role": "user",
-        "content": user_question
-    })
+    for idx, item in enumerate(st.session_state.chat_history):
+        st.sidebar.markdown(f"""
+        **Q{idx + 1}:**
+        {item["question"]}
 
-    with st.chat_message("user"):
+        **A:**
+        {item["answer"][:100]}...
+        """)
 
-        st.write(user_question)
-
-    with st.chat_message("assistant"):
-
-        with st.spinner("Thinking..."):
-
-            response = requests.post(
-                ASK_URL,
-                json={"question": user_question}
-            )
-
-        if response.status_code == 200:
-
-            data = response.json()
-
-            answer = data.get(
-                "response",
-                "No response generated."
-            )
-
-            sources = data.get(
-                "retrieved_context",
-                []
-            )
-
-            st.write(answer)
-
-            with st.expander(
-                "Sources / Retrieved Context"
-            ):
-
-                show_sources(sources)
-
-            # Save assistant response
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": answer,
-                "sources": sources
-            })
-
-        else:
-
-            error_message = (
-                "Backend error. "
-                "Please make sure FastAPI is running."
-            )
-
-            st.error(error_message)
-
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": error_message
-            })
+    if st.sidebar.button("Clear Chat History"):
+        st.session_state.chat_history = []
+        st.sidebar.success("✅ Chat history cleared!")

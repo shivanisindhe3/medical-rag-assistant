@@ -27,20 +27,35 @@ def ask_llama(request: QuestionRequest):
             [chunk["text"] for chunk in relevant_chunks]
         )
 
+        conversation_history = "\n".join([
+            f"User: {item.get('question', '')}\nAssistant: {item.get('answer', '')}"
+            for item in request.chat_history
+        ])
+
         prompt = f"""
-You are a medical AI assistant.
+You are a helpful medical AI assistant.
 
-Answer the user's question using ONLY the provided medical context.
+Answer the user's current question using ONLY the provided medical context.
 
-If the answer is not found in the context, say:
+You may use the previous conversation only to understand follow-up words like:
+"it", "this", "that", "they", "them", or "the condition".
+
+Do NOT use the previous conversation as medical evidence.
+Use ONLY the Medical Context as evidence.
+
+If the answer is not found in the Medical Context, say:
 "I don't know based on the provided medical documents."
 
-Do not give emergency medical advice. Tell users to consult a qualified healthcare professional.
+Do not give emergency medical advice.
+Tell users to consult a qualified healthcare professional when appropriate.
+
+Previous Conversation:
+{conversation_history}
 
 Medical Context:
 {context}
 
-User Question:
+Current Question:
 {request.question}
 """
 

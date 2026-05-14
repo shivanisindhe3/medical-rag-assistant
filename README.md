@@ -1,109 +1,97 @@
-````md
-# Medical RAG Assistant
+# 🩺 Medical RAG Assistant
 
-A local AI-powered Medical RAG Assistant that allows users to upload medical PDF documents and ask questions based on the uploaded content using Retrieval-Augmented Generation (RAG).
+A conversational AI-powered Medical RAG (Retrieval-Augmented Generation) Assistant that allows users to upload medical PDF documents and ask questions based on their content.
 
-The system extracts text from PDFs, converts the content into embeddings, stores them in a vector database, retrieves relevant medical context, and generates responses using Llama3 through Ollama.
-
----
-
-## Features
-
-- Medical PDF upload and ingestion
-- PDF text extraction
-- Intelligent text chunking with overlap
-- SentenceTransformer embeddings
-- ChromaDB vector database
-- Semantic similarity search
-- Local Llama3 inference using Ollama
-- FastAPI backend APIs
-- Swagger API documentation
-- Streamlit frontend interface
-- Retrieval-based question answering
+The system uses semantic search with embeddings and a vector database to retrieve relevant document chunks and generate grounded responses using a local LLM powered by Ollama.
 
 ---
 
-## Tech Stack
+# 🚀 Features
 
-### Backend
-- Python
-- FastAPI
-- Uvicorn
+- 📄 Upload and ingest multiple medical PDFs
+- 🧠 Conversational RAG with chat memory
+- 🔍 Semantic search using embeddings
+- 📚 ChromaDB vector database integration
+- 🤖 Local Llama3 inference using Ollama
+- 💬 Streamlit conversational chat interface
+- 📖 Source citations and retrieved context display
+- ⚡ FastAPI backend APIs
+- 🧩 Modular backend architecture
+- 📑 Swagger API documentation
+- 🗂 Expandable source cards in UI
 
-### AI / RAG
-- SentenceTransformers
-- ChromaDB
-- Ollama
-- Llama3
+---
 
-### Frontend
+# 🛠 Tech Stack
+
+## Frontend
 - Streamlit
 
-### Utilities
-- pypdf
-- requests
-- python-dotenv
+## Backend
+- FastAPI
+- Python
+
+## AI / NLP
+- Ollama
+- Llama3
+- Sentence Transformers
+
+## Vector Database
+- ChromaDB
+
+## PDF Processing
+- Pypdf
 
 ---
 
-## Architecture
+# 🏗 Architecture
 
 ```text
-User uploads PDF
+User Uploads PDF
         ↓
-FastAPI Backend receives file
+PDF Text Extraction
         ↓
-PDF text extraction using pypdf
+Text Cleaning
         ↓
-Text is split into chunks
+Chunking
         ↓
-Chunks are converted into embeddings
+Embedding Generation
         ↓
-Embeddings are stored in ChromaDB
+ChromaDB Vector Store
         ↓
-User asks a question
+Semantic Retrieval
         ↓
-Question is converted into embedding
+Llama3 Prompting
         ↓
-ChromaDB retrieves similar chunks
-        ↓
-Retrieved context is sent to Llama3/Ollama
-        ↓
-Final answer is returned to user
+AI Response with Sources
 ```
 
 ---
 
-## Project Structure
+# 📂 Project Structure
 
 ```text
-medical-rag-assistant/
+medical_RAG_assistant/
+│
+├── assets/
+│   ├── upload-success.png
+│   ├── chat-answer.png
+│   └── swagger-docs.png
 │
 ├── backend/
 │   ├── app/
-│   │   ├── main.py
-│   │   │
 │   │   ├── routes/
-│   │   │   ├── ask.py
-│   │   │   ├── ingest.py
-│   │   │   └── health.py
-│   │   │
+│   │   ├── services/
 │   │   ├── schemas/
-│   │   │   └── chat.py
-│   │   │
-│   │   └── services/
-│   │       ├── pdf_loader.py
-│   │       ├── document_loader.py
-│   │       ├── embedding_service.py
-│   │       └── vector_store.py
+│   │   └── main.py
 │   │
+│   ├── uploaded_files/
+│   ├── chroma_db/
 │   ├── requirements.txt
 │   └── .env
 │
 ├── frontend/
 │   └── app.py
-│
-├── chroma_db/
 │
 ├── README.md
 └── .gitignore
@@ -111,141 +99,189 @@ medical-rag-assistant/
 
 ---
 
-## API Endpoints
+# 📸 Screenshots
 
-### Health Check
+## PDF Upload and Ingestion
 
-```http
-GET /health
-```
-
-Checks whether the backend server is running.
+![PDF Upload](assets/upload-success.png)
 
 ---
 
-### Upload PDF
+## Chat With Medical Documents
 
-```http
-POST /ingest-pdf
-```
+![Chat Answer](assets/chat_answer.png)
+![Chat Answer](assets/chat_answer1.png)
+![Chat Answer](assets/chat_answer2.png)
 
-Uploads and ingests medical PDF documents into the vector database.
 
----
-
-### Ask Question
-
-```http
-POST /ask
-```
-
-Accepts a medical question, retrieves relevant document chunks, and generates a response using Llama3.
 
 ---
 
 ## Swagger API Documentation
 
-After running the backend server, open:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Swagger UI allows testing all APIs directly from the browser.
+![Swagger Docs](assets/swagger-docs.png)
 
 ---
 
-## Installation
+# ⚙️ Installation
 
-### Clone Repository
+## 1. Clone Repository
 
 ```bash
 git clone https://github.com/shivanisindhe3/medical-rag-assistant.git
+```
+
+---
+
+## 2. Navigate to Project
+
+```bash
 cd medical-rag-assistant
 ```
 
 ---
 
-## Backend Setup
+# 🔧 Backend Setup
+
+## 1. Navigate to Backend
 
 ```bash
 cd backend
+```
 
+---
+
+## 2. Create Virtual Environment
+
+```bash
+python -m venv .venv
+```
+
+---
+
+## 3. Activate Virtual Environment
+
+### Mac/Linux
+
+```bash
+source .venv/bin/activate
+```
+
+### Windows
+
+```bash
+.venv\Scripts\activate
+```
+
+---
+
+## 4. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## Run Backend
+## 5. Run FastAPI Backend
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Backend runs on:
+Backend runs at:
 
 ```text
 http://127.0.0.1:8000
 ```
 
----
+Swagger docs:
 
-## Frontend Setup
-
-```bash
-cd frontend
-
-pip install streamlit requests
+```text
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-## Run Frontend
+# 🎨 Frontend Setup
+
+## 1. Navigate to Frontend
+
+```bash
+cd frontend
+```
+
+---
+
+## 2. Run Streamlit App
 
 ```bash
 streamlit run app.py
 ```
 
----
+Frontend runs at:
 
-## Example Workflow
-
-1. Start backend server
-2. Open Swagger documentation
-3. Upload a medical PDF using `/ingest-pdf`
-4. Ask medical questions using `/ask`
-5. System retrieves relevant context
-6. Llama3 generates final response
+```text
+http://localhost:8501
+```
 
 ---
 
-## Future Improvements
+# 🤖 Ollama Setup
 
-- Multi-PDF support
-- Chat history memory
-- Source citation display
-- Better chunking strategies
-- Authentication system
-- Docker deployment
-- Cloud deployment
-- Admin dashboard
-- Medical report summarization
-- OCR support for scanned PDFs
+Install Ollama:
 
----
+https://ollama.com
 
-## Disclaimer
+Pull Llama3 model:
 
-This project is developed for educational and research purposes only.
+```bash
+ollama pull llama3
+```
 
-The system is not intended to replace professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare professional for medical concerns.
+Run Ollama locally before starting backend.
 
 ---
 
-## Author
+# 💡 Example Questions
+
+- What are the symptoms of diabetes?
+- How can diabetes be prevented?
+- What lifestyle changes are recommended?
+- What does the document say about prediabetes?
+- What are the risk factors?
+
+---
+
+# 📈 Future Improvements
+
+- 🌐 Cloud deployment
+- 🔐 User authentication
+- 📊 Retrieval similarity scores
+- ⚡ Streaming AI responses
+- 🧾 OCR support for scanned PDFs
+- 🐳 Docker support
+- 🔎 Hybrid keyword + vector search
+
+---
+
+# 👩‍💻 Author
 
 Shivani Sindhe
 
 GitHub:
-[medical-rag-assistant repository](https://github.com/shivanisindhe3/medical-rag-assistant)
-````
+https://github.com/shivanisindhe3
+
+---
+
+# ⭐ Project Highlights
+
+This project demonstrates:
+- Retrieval-Augmented Generation (RAG)
+- Conversational AI memory
+- Semantic document retrieval
+- Vector databases
+- LLM integration
+- FastAPI backend engineering
+- Streamlit frontend development
+- End-to-end AI application development
