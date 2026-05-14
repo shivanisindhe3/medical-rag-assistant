@@ -274,7 +274,7 @@ https://github.com/shivanisindhe3
 
 ---
 
-# ⭐ Project Highlights
+#  Project Highlights
 
 This project demonstrates:
 - Retrieval-Augmented Generation (RAG)
